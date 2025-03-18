@@ -33,9 +33,26 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         let alert = UIAlertController(title: "Add Person", message: "Name: ", preferredStyle: .alert)
         alert.addTextField()
         
-        let submitButtom = UIAlertAction(title: "Add", style: .default){ (action) in
-            let textField = alert.textFields![0]
+        let submitButton = UIAlertAction(title: "Add", style: .default){ (action) in
+            guard let textField = alert.textFields?.first, let nameToAdd = textField.text, !nameToAdd.isEmpty  else { return }
+            
+            let newPerson = Person(context: self.context)
+            newPerson.name = nameToAdd
+            
+            do {
+                try self.context.save()
+                self.fetchPersons()
+            } catch {
+                print("There was a problem saving the data")
+            }
+            
+            
         }
+        
+        alert.addAction(submitButton)
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+        
+        self.present(alert, animated: true, completion: nil)
     }
     
     func fetchPersons(){
@@ -60,12 +77,12 @@ extension ViewController{
     // Configure the UI for a specific cell
     
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        return 10
+        return self.items?.count ?? 0
     }
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "customCell", for: indexPath) as! TableViewCell
         let person = self.items![indexPath.row]
-        cell.testLabel.text = "Placeholder"
+        cell.testLabel.text = person.name
             return cell
     }
     
@@ -75,7 +92,9 @@ extension ViewController{
         alert.addTextField()
         
         let textField = alert.textFields![0]
-        textField.text = "test"
+        textField.text = person.name
+        
+        alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
         self.present(alert, animated: true, completion: nil)
     }
 }
