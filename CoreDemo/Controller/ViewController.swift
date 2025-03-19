@@ -17,6 +17,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     var items: [Person]?
     
     let context = (UIApplication.shared.delegate as! AppDelegate).persistentContainer.viewContext
+    
     override func viewDidLoad() {
         super.viewDidLoad()
         setupTableUI()
@@ -30,15 +31,21 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     }
     
     func addPerson(){
+        // create the alert form
         let alert = UIAlertController(title: "Add Person", message: "Name: ", preferredStyle: .alert)
         alert.addTextField()
         
+        
+        // Config the submit button
         let submitButton = UIAlertAction(title: "Add", style: .default){ (action) in
+           // Get the textfield alert
             guard let textField = alert.textFields?.first, let nameToAdd = textField.text, !nameToAdd.isEmpty  else { return }
             
+            // Create a object of a Person
             let newPerson = Person(context: self.context)
             newPerson.name = nameToAdd
             
+            // save the data and refetch
             do {
                 try self.context.save()
                 self.fetchPersons()
@@ -57,7 +64,19 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
     
     func fetchPersons(){
         do {
-            self.items = try context.fetch(Person.fetchRequest())
+            let request = Person.fetchRequest() as NSFetchRequest<Person>
+            // Set filtering and sorting
+            let pred = NSPredicate(format: "name CONTAINS %@", "B")
+//            request.predicate = pred
+            
+            // Ascending Sorting
+            let sortAsc = NSSortDescriptor(key: "name", ascending: true)
+            
+            // Descending Sorting
+            let sortDesc = NSSortDescriptor(key: "name", ascending: false)
+            
+//            request.sortDescriptors = [sortDesc]
+            self.items = try context.fetch(request)
             
             DispatchQueue.main.async {
                 self.TableView.reloadData()
@@ -79,6 +98,8 @@ extension ViewController{
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
         return self.items?.count ?? 0
     }
+    
+    // Display person details in a cell
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
         let cell = tableView.dequeueReusableCell(withIdentifier: "customCell", for: indexPath) as! TableViewCell
         let person = self.items![indexPath.row]
@@ -86,15 +107,42 @@ extension ViewController{
             return cell
     }
     
+    // Edit the tapped Cell
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         let person = self.items![indexPath.row]
         let alert = UIAlertController(title: "Edit Person", message: "Edit name: ", preferredStyle: .alert)
-        alert.addTextField()
+        alert.addTextField { textField in
+            textField.text = person.name
+        }
         
-        let textField = alert.textFields![0]
-        textField.text = person.name
-        
+        let saveButton = UIAlertAction(title: "Save", style: .default) { (action) in
+            
+            
+            guard let textField = alert.textFields?.first, let nameToSave = textField.text, !nameToSave.isEmpty else { return }
+            person.name = nameToSave
+            do {
+                try self.context.save()
+                self.fetchPersons()
+            } catch {
+                print("There was an error saving the data")
+            }
+        }
+        alert.addAction(saveButton)
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
         self.present(alert, animated: true, completion: nil)
+    }
+    
+    
+    func tableView(_ tableView: UITableView, commit editingStyle: UITableViewCell.EditingStyle, forRowAt indexPath: IndexPath) {
+        if editingStyle == .delete {
+            let personToRemove = self.items![indexPath.row]
+            self.context.delete(personToRemove)
+            do {
+                try self.context.save()
+                self.fetchPersons()
+            } catch {
+                
+            }
+        }
     }
 }
