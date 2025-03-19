@@ -22,6 +22,7 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         super.viewDidLoad()
         setupTableUI()
         fetchPersons()
+        relationshipDemo()
     }
 
     func setupTableUI(){
@@ -60,6 +61,24 @@ class ViewController: UIViewController, UITableViewDelegate, UITableViewDataSour
         alert.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
         
         self.present(alert, animated: true, completion: nil)
+    }
+    func relationshipDemo(){
+        
+        // Create a family
+        var family = Family(context: self.context)
+        family.name = "ABC Family"
+        
+        // Create a person
+        var person = Person(context: self.context)
+        person.name = "John"
+        person.family = family // 1st way to specify a relationship between family and person
+        /*family.addToPeople(person)*/ // 1st way to specify a relationship between family and person/
+        try! self.context.save()
+        
+        // Reload the tableview to display John
+        DispatchQueue.main.async {
+            self.TableView.reloadData()
+        }
     }
     
     func fetchPersons(){
